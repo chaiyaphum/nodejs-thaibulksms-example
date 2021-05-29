@@ -9,6 +9,8 @@ node_modules/
 .settings/
 
 # Executables
+*.env
+
 *.swf
 *.air
 *.ipa
