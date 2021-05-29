@@ -1,5 +1,4 @@
 require('dotenv').config()
-
 const express = require('express')
 const {
     body,
@@ -17,13 +16,14 @@ app.use(express.urlencoded({
 
 
 const options = {
-    apiKey: process.env.API_KEY,
-    apiSecret: process.env.API_SECRET,
+    apiKey: process.env.SMS_API_KEY,
+    apiSecret: process.env.SMS_API_SECRET,
 }
 
-const otp = thaibulksmsApi.otp(options)
 
-app.post('/request-otp', body('phone_number').isMobilePhone('th-TH'), async (req, res) => {
+const sms = thaibulksmsApi.sms(options)
+
+app.post('/send-sms', body('phone_number').isMobilePhone('th-TH'), body('message').not().isEmpty(), async (req, res) => {
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -35,37 +35,27 @@ app.post('/request-otp', body('phone_number').isMobilePhone('th-TH'), async (req
     try {
 
         let phoneNumber = req.body.phone_number
-        const response = await otp.request(phoneNumber)
+        let message = req.body.message
+        let sender = req.body.sender
+        let body = {
+            msisdn: phoneNumber,
+            message: message,
+            // sender: sender,
+            // scheduled_delivery: '',
+            // force: ''
+        }
+        console.log(body)
+        const response = await sms.sendSMS(body)
+        console.log(response)
         res.json(response.data)
 
     } catch (error) {
+        console.log(error)
         return res.status(500).json({
             errors: error
         });
     }
 
-})
-
-app.post('/verify-otp', body('token').notEmpty(), body('otp_code').notEmpty(), async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({
-            errors: errors.array()
-        });
-    }
-
-    try {
-
-        let token = req.body.token
-        let otpCode = req.body.otp_code
-        const response = await otp.verify(token, otpCode)
-        res.json(response.data)
-
-    } catch (error) {
-        return res.status(500).json({
-            errors: error
-        });
-    }
 })
 
 app.get('/', function (req, res) {
